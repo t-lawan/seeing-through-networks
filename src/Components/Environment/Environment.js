@@ -278,7 +278,7 @@ class Environment extends Component {
 
     this.updateCamera();
 
-    this.renderer.render(this.scene, this.splineCamera);
+    this.renderer.render(this.scene, this.params.animationView ? this.splineCamera : this.camera );
 
     // The window.requestAnimationFrame() method tells the browser that you wish to perform
     // an animation and requests that the browser call a specified function
@@ -296,6 +296,7 @@ class Environment extends Component {
     // Note that after making changes to most of camera properties you have to call
     // .updateProjectionMatrix for the changes to take effect.
     this.camera.updateProjectionMatrix();
+    this.splineCamera.updateProjectionMatrix()
   };
 
   render() {
