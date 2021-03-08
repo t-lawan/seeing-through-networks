@@ -14,14 +14,15 @@ class Environment extends Component {
   tubeGeometry;
   mesh;
   cameraHelper;
+  camPosIndex = 0;
   componentDidMount() {
     this.init();
     // this.addCustomSceneObjects();
     this.startAnimationLoop();
-    window.addEventListener("resize", this.handleWindowResize);
   }
 
   componentWillUnmount() {
+    this.removeEventListeners();
     window.removeEventListener("resize", this.handleWindowResize);
     window.cancelAnimationFrame(this.requestID);
     this.controls.dispose();
@@ -38,22 +39,14 @@ class Environment extends Component {
     this.setupSpline();
     this.parent = new THREE.Object3D();
     this.scene.add(this.parent);
+    this.setupSplineCamera();
+    this.setupCameraHelper();
 
-    this.splineCamera = new THREE.PerspectiveCamera(
-      84,
-      this.width / this.height,
-      0.01,
-      1000
-    );
-    this.parent.add(this.splineCamera);
-
-    this.cameraHelper = new THREE.CameraHelper(this.splineCamera);
-    this.scene.add(this.cameraHelper);
     this.addTube();
-    this.cameraEye = new THREE.Mesh( new THREE.SphereGeometry( 5 ), new THREE.MeshBasicMaterial( { color: 0xdddddd } ) );
-    this.parent.add( this.cameraEye );
-    this.animateCamera()    
+
+    this.animateCamera();
     this.setupRenderer();
+    this.addEventListeners();
   };
 
   setupCamera = () => {
@@ -64,6 +57,26 @@ class Environment extends Component {
       10000
     );
     this.camera.position.set(0, 50, 500);
+  };
+
+  setupSplineCamera = () => {
+    this.splineCamera = new THREE.PerspectiveCamera(
+      84,
+      this.width / this.height,
+      0.01,
+      1000
+    );
+    this.parent.add(this.splineCamera);
+  };
+
+  setupCameraHelper = () => {
+    this.cameraEye = new THREE.Mesh(
+      new THREE.SphereGeometry(5),
+      new THREE.MeshBasicMaterial({ color: 0xdddddd })
+    );
+    this.parent.add(this.cameraEye);
+    this.cameraHelper = new THREE.CameraHelper(this.splineCamera);
+    this.scene.add(this.cameraHelper);
   };
 
   setupControls = () => {
@@ -151,8 +164,7 @@ class Environment extends Component {
       DecoratedTorusKnot4a: new Curves.DecoratedTorusKnot4a(),
       DecoratedTorusKnot4b: new Curves.DecoratedTorusKnot4b(),
       DecoratedTorusKnot5a: new Curves.DecoratedTorusKnot5a(),
-      DecoratedTorusKnot5c: new Curves.DecoratedTorusKnot5c(),
-      PipeSpline: this.spline
+      DecoratedTorusKnot5c: new Curves.DecoratedTorusKnot5c()
     };
 
     this.params = {
@@ -166,13 +178,16 @@ class Environment extends Component {
       cameraHelper: false
     };
 
-    this.material = new THREE.MeshLambertMaterial({ color: 0xff00ff });
+    this.material = new THREE.MeshLambertMaterial({ 
+        color: 0x79a6bc,
+    });
 
     this.wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      opacity: 0.3,
+      color: 0x79a6bc,
+      opacity: 0.0,
       wireframe: true,
-      transparent: true
+      transparent: true,
+      vertexColors: true
     });
   };
 
@@ -239,7 +254,9 @@ class Environment extends Component {
       this.tubeGeometry.binormals[pickNext],
       this.tubeGeometry.binormals[pick]
     );
-    this.binormal.multiplyScalar(pickt - pick).add(this.tubeGeometry.binormals[pick]);
+    this.binormal
+      .multiplyScalar(pickt - pick)
+      .add(this.tubeGeometry.binormals[pick]);
 
     this.tubeGeometry.parameters.path.getTangentAt(t, this.direction);
     const offset = 15;
@@ -263,9 +280,16 @@ class Environment extends Component {
 
     // camera orientation 2 - up orientation via normal
 
-    if (!this.params.lookAhead) this.lookAt.copy(this.position).add(this.direction);
-    this.splineCamera.matrix.lookAt(this.splineCamera.position, this.lookAt, this.normal);
-    this.splineCamera.quaternion.setFromRotationMatrix(this.splineCamera.matrix);
+    if (!this.params.lookAhead)
+      this.lookAt.copy(this.position).add(this.direction);
+    this.splineCamera.matrix.lookAt(
+      this.splineCamera.position,
+      this.lookAt,
+      this.normal
+    );
+    this.splineCamera.quaternion.setFromRotationMatrix(
+      this.splineCamera.matrix
+    );
 
     this.cameraHelper.update();
   };
@@ -276,9 +300,12 @@ class Environment extends Component {
       this.cube.rotation.y += 0.01;
     }
 
-    this.updateCamera();
+    // this.updateCamera();
 
-    this.renderer.render(this.scene, this.params.animationView ? this.splineCamera : this.camera );
+    this.renderer.render(
+      this.scene,
+      this.params.animationView ? this.splineCamera : this.camera
+    );
 
     // The window.requestAnimationFrame() method tells the browser that you wish to perform
     // an animation and requests that the browser call a specified function
@@ -296,7 +323,92 @@ class Environment extends Component {
     // Note that after making changes to most of camera properties you have to call
     // .updateProjectionMatrix for the changes to take effect.
     this.camera.updateProjectionMatrix();
-    this.splineCamera.updateProjectionMatrix()
+    this.splineCamera.updateProjectionMatrix();
+  };
+
+  onDocumentDoubleClick = event => {
+    this.params.animationView = !this.params.animationView;
+
+    if (this.params.animationView) {
+        this.wireframeMaterial.transparent = false;
+      this.controls.dispose();
+    } else {
+      this.wireframeMaterial.transparent = true;
+      this.setupControls();
+
+    }
+  };
+
+  onMouseWheel = event => {
+    //   console.log('DELTA Y', event.deltaY)
+    let numOfPoints = 500;
+    if (event.deltaY < 0 && this.camPosIndex < numOfPoints - 1) {
+      this.camPosIndex++;
+    } else if (event.deltaY > 0 && this.camPosIndex > 0) {
+      this.camPosIndex--;
+    }
+
+    if(this.camPosIndex > numOfPoints - 2) {
+        this.camPosIndex = 0;
+    }
+
+    // console.log('CAM: ' + this.camPosIndex, 'POINTS: ', numOfPoints ) 
+
+    if(event.deltaY !== 0 && (this.camPosIndex > 0 && this.camPosIndex < numOfPoints - 2)) {
+        this.tubeGeometry.parameters.path.getPoint(
+          this.camPosIndex / numOfPoints,
+          this.position
+        );
+        this.position.multiplyScalar(this.params.scale);
+
+        this.binormal.subVectors(
+            this.tubeGeometry.binormals[this.camPosIndex],
+            this.tubeGeometry.binormals[this.camPosIndex + 1]
+          );
+
+        this.tubeGeometry.parameters.path.getTangentAt(this.camPosIndex / numOfPoints, this.direction);
+        const offset = 15;
+
+        this.normal.copy(this.binormal).cross(this.direction);
+        
+        this.position.add(this.normal.clone().multiplyScalar(offset));
+
+        this.splineCamera.position.copy(this.position);
+        this.cameraEye.position.copy(this.position);
+
+        this.tubeGeometry.parameters.path.getPointAt(
+          (this.camPosIndex + 1) / numOfPoints,
+          this.lookAt
+        );
+        this.lookAt.multiplyScalar(this.params.scale);
+    
+        this.splineCamera.matrix.lookAt(
+          this.splineCamera.position,
+          this.lookAt,
+          this.normal
+        );
+    
+        this.splineCamera.quaternion.setFromRotationMatrix(
+          this.splineCamera.matrix
+        );
+    
+        this.cameraHelper.update();
+    }
+
+
+
+  };
+
+  addEventListeners = () => {
+    document.addEventListener("dblclick", this.onDocumentDoubleClick, false);
+    window.addEventListener("resize", this.handleWindowResize, false);
+    window.addEventListener("wheel", this.onMouseWheel, false);
+  };
+
+  removeEventListeners = () => {
+    document.removeEventListener("dblclick", this.onDocumentDoubleClick);
+    window.removeEventListener("resize", this.handleWindowResize);
+    window.addEventListener("wheel", this.onMouseWheel);
   };
 
   render() {
