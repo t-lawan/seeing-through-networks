@@ -241,6 +241,8 @@ class Environment extends Component {
     } );
     
     this.cube = new THREE.Mesh( geometry, material );
+    // let point = this.tubeGeometry.parameters.path.getPointAt(0.7);
+    // this.cube.position.set(point.x, point.y, point.z) 
     this.cube.position.set(-83.29314565880259, 36.427311608619064, 118.50835837163037)
     this.scene.add( this.cube );
   }
@@ -371,6 +373,7 @@ class Environment extends Component {
 
     if (this.params.animationView) {
         // this.wireframeMaterial.transparent = false;
+        this.updateCamera(0)
       this.controls.dispose();
     } else {
       // this.wireframeMaterial.transparent = true;
