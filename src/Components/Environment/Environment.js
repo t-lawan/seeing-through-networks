@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Colours } from "../Global/global.styles";
 import { Curves } from "../../Utility/Curves";
+import { Shader } from "../../Utility/Shader";
 const style = {
   height: "100vh" // we can control scene size by setting container dimensions
 };
@@ -47,6 +48,7 @@ class Environment extends Component {
     this.animateCamera();
     this.setupRenderer();
     this.addEventListeners();
+    // this.clock = new THREE.Clock();
   };
 
   setupCamera = () => {
@@ -61,10 +63,10 @@ class Environment extends Component {
 
   setupSplineCamera = () => {
     this.splineCamera = new THREE.PerspectiveCamera(
-      84,
+      50,
       this.width / this.height,
       0.01,
-      1000
+      500
     );
     this.parent.add(this.splineCamera);
   };
@@ -81,6 +83,8 @@ class Environment extends Component {
 
   setupControls = () => {
     this.controls = new OrbitControls(this.camera, this.mount);
+    this.controls.autoRotate = true;
+    this.controls.enabled = false;
   };
 
   setupRenderer = () => {
@@ -95,6 +99,8 @@ class Environment extends Component {
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   setupScene = () => {
     this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color("black");
+    // this.scene.fog = new THREE.Fog(0xffffff, 1, 12);
   };
 
   setupLights = () => {
@@ -179,15 +185,30 @@ class Environment extends Component {
     };
 
     this.material = new THREE.MeshLambertMaterial({ 
-        color: 0x79a6bc,
+        color: new THREE.Color(0x79a6bc),
+        transparent: false,
+        side: THREE.DoubleSide
     });
+    
+    
+    //   let uniforms = {
+    //   uTime: { value: 0.0 },
+    //   uResolution: { value: { x: this.width, y:this.height } },
+    //   uColor: { value: new THREE.Color(0x79a6bc) }
+    // }
+
+    // this.material = new THREE.ShaderMaterial({
+    //   uniforms: uniforms,
+    //   fragmentShader: Shader.fragment(),
+    //   vertexShader: Shader.vertex()
+    // })
+
 
     this.wireframeMaterial = new THREE.MeshBasicMaterial({
       color: 0x79a6bc,
-      opacity: 0.0,
+      opacity: 1.0,
       wireframe: true,
-      transparent: true,
-      vertexColors: true
+      transparent: false,
     });
   };
 
@@ -210,6 +231,18 @@ class Environment extends Component {
     this.addGeometry(this.tubeGeometry);
 
     this.setScale();
+
+    const geometry = new THREE.BoxGeometry(5, 5, 5);
+    const material = new THREE.MeshPhongMaterial( {
+        color: 0x156289,
+        emissive: 0x072534,
+        side: THREE.DoubleSide,
+        flatShading: true
+    } );
+    
+    this.cube = new THREE.Mesh( geometry, material );
+    this.cube.position.set(-83.29314565880259, 36.427311608619064, 118.50835837163037)
+    this.scene.add( this.cube );
   }
 
   setScale() {
@@ -224,8 +257,8 @@ class Environment extends Component {
     // 3D shape
 
     this.mesh = new THREE.Mesh(geometry, this.material);
-    const wireframe = new THREE.Mesh(geometry, this.wireframeMaterial);
-    this.mesh.add(wireframe);
+    // const wireframe = new THREE.Mesh(geometry, this.wireframeMaterial);
+    // this.mesh.add(wireframe);
 
     this.parent.add(this.mesh);
   }
@@ -235,10 +268,10 @@ class Environment extends Component {
     this.cameraEye.visible = this.params.cameraHelper;
   }
 
-  updateCamera = () => {
-    const time = Date.now();
-    const looptime = 20 * 1000;
-    const t = (time % looptime) / looptime;
+  updateCamera = (t) => {
+    // const time = Date.now();
+    // const looptime = 20 * 1000;
+    // const t = (time % looptime) / looptime;
 
     this.tubeGeometry.parameters.path.getPointAt(t, this.position);
     this.position.multiplyScalar(this.params.scale);
@@ -259,7 +292,7 @@ class Environment extends Component {
       .add(this.tubeGeometry.binormals[pick]);
 
     this.tubeGeometry.parameters.path.getTangentAt(t, this.direction);
-    const offset = 15;
+    const offset = 2;
 
     this.normal.copy(this.binormal).cross(this.direction);
 
@@ -300,7 +333,14 @@ class Environment extends Component {
       this.cube.rotation.y += 0.01;
     }
 
-    // this.updateCamera();
+    if(!this.params.animationView) {
+      // this.updateCamera();
+      this.controls.update()
+    }
+    // if(this.material && this.material.uniforms) {
+    //   this.material.uniforms.uTime.value = this.clock.getElapsedTime();
+
+    // }
 
     this.renderer.render(
       this.scene,
@@ -330,72 +370,28 @@ class Environment extends Component {
     this.params.animationView = !this.params.animationView;
 
     if (this.params.animationView) {
-        this.wireframeMaterial.transparent = false;
+        // this.wireframeMaterial.transparent = false;
       this.controls.dispose();
     } else {
-      this.wireframeMaterial.transparent = true;
+      // this.wireframeMaterial.transparent = true;
       this.setupControls();
 
     }
   };
 
   onMouseWheel = event => {
-    //   console.log('DELTA Y', event.deltaY)
-    let numOfPoints = 500;
-    if (event.deltaY < 0 && this.camPosIndex < numOfPoints - 1) {
-      this.camPosIndex++;
-    } else if (event.deltaY > 0 && this.camPosIndex > 0) {
-      this.camPosIndex--;
+    let numOfPoints = 350;
+    if(event.deltaY > 0) {
+      // if(this.camPosIndex < numOfPoints - 1) {
+        this.camPosIndex++;
+      // }
+    } else if(event.deltaY < 0) {
+      if(this.camPosIndex > 0) {
+        this.camPosIndex--;
+      }
     }
 
-    if(this.camPosIndex > numOfPoints - 2) {
-        this.camPosIndex = 0;
-    }
-
-    // console.log('CAM: ' + this.camPosIndex, 'POINTS: ', numOfPoints ) 
-
-    if(event.deltaY !== 0 && (this.camPosIndex > 0 && this.camPosIndex < numOfPoints - 2)) {
-        this.tubeGeometry.parameters.path.getPoint(
-          this.camPosIndex / numOfPoints,
-          this.position
-        );
-        this.position.multiplyScalar(this.params.scale);
-
-        this.binormal.subVectors(
-            this.tubeGeometry.binormals[this.camPosIndex],
-            this.tubeGeometry.binormals[this.camPosIndex + 1]
-          );
-
-        this.tubeGeometry.parameters.path.getTangentAt(this.camPosIndex / numOfPoints, this.direction);
-        const offset = 15;
-
-        this.normal.copy(this.binormal).cross(this.direction);
-        
-        this.position.add(this.normal.clone().multiplyScalar(offset));
-
-        this.splineCamera.position.copy(this.position);
-        this.cameraEye.position.copy(this.position);
-
-        this.tubeGeometry.parameters.path.getPointAt(
-          (this.camPosIndex + 1) / numOfPoints,
-          this.lookAt
-        );
-        this.lookAt.multiplyScalar(this.params.scale);
-    
-        this.splineCamera.matrix.lookAt(
-          this.splineCamera.position,
-          this.lookAt,
-          this.normal
-        );
-    
-        this.splineCamera.quaternion.setFromRotationMatrix(
-          this.splineCamera.matrix
-        );
-    
-        this.cameraHelper.update();
-    }
-
-
+    this.updateCamera((this.camPosIndex % numOfPoints)/numOfPoints)
 
   };
 
