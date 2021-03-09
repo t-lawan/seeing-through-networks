@@ -204,12 +204,12 @@ class Environment extends Component {
     // })
 
 
-    this.wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x79a6bc,
-      opacity: 1.0,
-      wireframe: true,
-      transparent: false,
-    });
+  //   this.wireframeMaterial = new THREE.MeshBasicMaterial({
+  //     color: 0x79a6bc,
+  //     opacity: 1.0,
+  //     wireframe: true,
+  //     transparent: false,
+  //   });
   };
 
   addTube() {
