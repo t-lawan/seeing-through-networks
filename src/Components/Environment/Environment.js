@@ -3,7 +3,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { Colours } from "../Global/global.styles";
 import { Curves } from "../../Utility/Curves";
-import { Shader } from "../../Utility/Shader";
+import { AfterimagePass } from "../../Utility/AfterImagePass";
+import { EffectComposer } from "../../Utility/EffectComposer";
+import { RenderPass } from "../../Utility/RenderPass";
+
+
 const style = {
   height: "100vh" // we can control scene size by setting container dimensions
 };
@@ -15,7 +19,14 @@ class Environment extends Component {
   tubeGeometry;
   mesh;
   cameraHelper;
+  composer;
+  afterImagePass;
   camPosIndex = 0;
+  colour;
+  factor = 1;
+  hValue = 0;
+  sValue = 0.2;
+  lValue = 0.4;
   componentDidMount() {
     this.init();
     // this.addCustomSceneObjects();
@@ -32,7 +43,8 @@ class Environment extends Component {
   init = () => {
     this.width = this.mount.clientWidth;
     this.height = this.mount.clientHeight;
-
+    this.colour = new THREE.Color(0x79a6bc)
+    this.colour.setHSL(this.hValue, this.sValue, this.lValue);
     this.setupScene();
     this.setupCamera();
     this.setupControls();
@@ -47,6 +59,7 @@ class Environment extends Component {
 
     this.animateCamera();
     this.setupRenderer();
+    this.setupPostProcessing()
     this.addEventListeners();
     // this.clock = new THREE.Clock();
   };
@@ -60,6 +73,12 @@ class Environment extends Component {
     );
     this.camera.position.set(0, 50, 500);
   };
+  setupPostProcessing = () => {
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass( new RenderPass( this.scene, this.splineCamera ) )
+    this.afterImagePass = new AfterimagePass();
+    this.composer.addPass(this.afterImagePass)
+  }
 
   setupSplineCamera = () => {
     this.splineCamera = new THREE.PerspectiveCamera(
@@ -185,7 +204,7 @@ class Environment extends Component {
     };
 
     this.material = new THREE.MeshLambertMaterial({ 
-        color: new THREE.Color(0x79a6bc),
+        color: new THREE.Color(this.colour),
         transparent: false,
         side: THREE.DoubleSide
     });
@@ -338,16 +357,28 @@ class Environment extends Component {
     if(!this.params.animationView) {
       // this.updateCamera();
       this.controls.update()
-    }
-    // if(this.material && this.material.uniforms) {
-    //   this.material.uniforms.uTime.value = this.clock.getElapsedTime();
-
-    // }
-
-    this.renderer.render(
+      this.renderer.render(
       this.scene,
       this.params.animationView ? this.splineCamera : this.camera
     );
+    } else {
+      this.composer.render();
+    }
+    let speed = 0.001;
+    if(this.hValue <= 0) {
+      this.factor = 1;
+    } else if(this.hValue >= 1) {
+      this.factor = -1;
+    }
+
+    this.hValue+= speed * this.factor;
+
+    this.colour.lerpColors(new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue), new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue), this.hValue)
+    // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
+    this.material.color.set(this.colour)
+
+    
+
 
     // The window.requestAnimationFrame() method tells the browser that you wish to perform
     // an animation and requests that the browser call a specified function
@@ -370,7 +401,7 @@ class Environment extends Component {
 
   onDocumentDoubleClick = event => {
     this.params.animationView = !this.params.animationView;
-
+    console.log(this.hValue + ', ')
     if (this.params.animationView) {
         // this.wireframeMaterial.transparent = false;
         this.updateCamera(0)
@@ -393,8 +424,14 @@ class Environment extends Component {
         this.camPosIndex--;
       }
     }
+    let i = (this.camPosIndex % numOfPoints)/numOfPoints
+    this.hValue = i;
+    this.colour.lerpColors(new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue), new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue), this.hValue)
 
-    this.updateCamera((this.camPosIndex % numOfPoints)/numOfPoints)
+    // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
+    this.material.color.set(this.colour)
+
+    this.updateCamera(i)
 
   };
 
