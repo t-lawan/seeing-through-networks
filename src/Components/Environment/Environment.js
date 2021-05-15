@@ -6,12 +6,39 @@ import { Curves } from "../../Utility/Curves";
 import { AfterimagePass } from "../../Utility/AfterImagePass";
 import { EffectComposer } from "../../Utility/EffectComposer";
 import { RenderPass } from "../../Utility/RenderPass";
-
-
+import LAURIE_DRONE from "../../Assets/Audio/LAURIE_DRONE.mp3";
+import LAURIE_DRUMS from "../../Assets/Audio/LAURIE_DRUMS.mp3";
+import styled from 'styled-components'
+import { ModalTypes } from "../../Utility/Helper";
+import Modal from "../Modal/Modal";
 const style = {
   height: "100vh" // we can control scene size by setting container dimensions
 };
+const EnvironmentWrapper = styled.div`
+  height: 100vh
+`
+const MenuWrapper = styled.div`
+  width: 100vw;
+  height: 15vh;
+  position: absolute;
+  bottom: 0;
+  /* background: red; */
+  z-index: 1000;
+  display: ${props => props.show ? 'block': 'none'};
+`
 
+const MenuFlexWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+`
+
+const MenuText = styled.h1`
+  color: ${Colours.green};
+`
 class Environment extends Component {
   width;
   height;
@@ -27,6 +54,16 @@ class Environment extends Component {
   hValue = 0;
   sValue = 0.2;
   lValue = 0.4;
+  sound;
+  audioDetune = 0;
+  clickableObjects = [];
+  state = {
+    animationView: true,
+    pause: true,
+    showModal: true,
+    modalType: ModalTypes.INTRODUCTION
+  }
+
   componentDidMount() {
     this.init();
     // this.addCustomSceneObjects();
@@ -43,7 +80,7 @@ class Environment extends Component {
   init = () => {
     this.width = this.mount.clientWidth;
     this.height = this.mount.clientHeight;
-    this.colour = new THREE.Color(0x79a6bc)
+    this.colour = new THREE.Color(0x79a6bc);
     this.colour.setHSL(this.hValue, this.sValue, this.lValue);
     this.setupScene();
     this.setupCamera();
@@ -52,14 +89,17 @@ class Environment extends Component {
     this.setupSpline();
     this.parent = new THREE.Object3D();
     this.scene.add(this.parent);
+    this.setupLoadingManager();
     this.setupSplineCamera();
     this.setupCameraHelper();
-
     this.addTube();
-
     this.animateCamera();
+    this.setupRayCaster();
+    this.setupMouse();
+    this.setupAudioListener();
     this.setupRenderer();
-    this.setupPostProcessing()
+    this.setupPostProcessing();
+    // this.setupAudio();
     this.addEventListeners();
     // this.clock = new THREE.Clock();
   };
@@ -75,10 +115,10 @@ class Environment extends Component {
   };
   setupPostProcessing = () => {
     this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass( new RenderPass( this.scene, this.splineCamera ) )
+    this.composer.addPass(new RenderPass(this.scene, this.splineCamera));
     this.afterImagePass = new AfterimagePass();
-    this.composer.addPass(this.afterImagePass)
-  }
+    this.composer.addPass(this.afterImagePass);
+  };
 
   setupSplineCamera = () => {
     this.splineCamera = new THREE.PerspectiveCamera(
@@ -88,6 +128,52 @@ class Environment extends Component {
       500
     );
     this.parent.add(this.splineCamera);
+  };
+
+  setupAudioListener = () => {
+    this.audioListener = new THREE.AudioListener();
+    this.camera.add(this.audioListener);
+    this.splineCamera.add(this.audioListener);
+  };
+
+  setupAudio = () => {
+    this.audioLoader = new THREE.AudioLoader(this.manager);
+    this.sound = new THREE.Audio(this.audioListener);
+    this.audioLoader.load(LAURIE_DRONE, buffer => {
+      this.sound.setBuffer(buffer);
+      this.playSound();
+    });
+  };
+
+  playSound = () => {
+    if (this.sound) {
+      this.sound.setLoop(true);
+      this.sound.setVolume(0.1);
+      this.sound.playbackRate = 0.7;
+      this.sound.detune = this.audioDetune;
+      this.sound.play();
+    }
+  };
+
+  setupLoadingManager = () => {
+    this.manager = new THREE.LoadingManager();
+    this.manager.onStart = this.loadStart;
+    this.manager.onProgress = this.loadProgressing;
+    this.manager.onLoad = this.loadFinished;
+  };
+
+  loadStart = (url, itemsLoaded, itemsTotal) => {
+    // this.props.isLoading();
+    // this.props.loading(itemsLoaded, itemsTotal);
+  };
+
+  loadProgressing = (url, itemsLoaded, itemsTotal) => {
+    // this.props.loading(itemsLoaded, itemsTotal);
+  };
+
+  loadFinished = () => {
+    // this.props.hasLoaded();
+    // this.onWindowResize();
   };
 
   setupCameraHelper = () => {
@@ -118,15 +204,15 @@ class Environment extends Component {
   // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
   setupScene = () => {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color("black");
+    this.scene.background = new THREE.Color(Colours.blue);
     // this.scene.fog = new THREE.Fog(0xffffff, 1, 12);
   };
 
   setupLights = () => {
     const lights = [];
-    lights[0] = new THREE.PointLight(0xffffff, 1, 0);
-    lights[1] = new THREE.PointLight(0xffffff, 1, 0);
-    lights[2] = new THREE.PointLight(0xffffff, 1, 0);
+    lights[0] = new THREE.PointLight(Colours.green, 1, 0);
+    lights[1] = new THREE.PointLight(Colours.green, 1, 0);
+    lights[2] = new THREE.PointLight(Colours.yellow, 1, 0);
 
     lights[0].position.set(0, 200, 0);
     lights[1].position.set(100, 200, 100);
@@ -135,6 +221,19 @@ class Environment extends Component {
     this.scene.add(lights[0]);
     this.scene.add(lights[1]);
     this.scene.add(lights[2]);
+  };
+
+  setupRayCaster = () => {
+    this.raycaster = new THREE.Raycaster();
+  };
+
+  setupMouse = () => {
+    this.mouse = new THREE.Vector2();
+  };
+
+  setMouse = event => {
+    this.mouse.x = (event.clientX / this.mount.clientWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / this.mount.clientHeight) * 2 + 1;
   };
 
   setupSpline = () => {
@@ -203,13 +302,13 @@ class Environment extends Component {
       cameraHelper: false
     };
 
-    this.material = new THREE.MeshLambertMaterial({ 
-        color: new THREE.Color(this.colour),
-        transparent: false,
-        side: THREE.DoubleSide
+    this.material = new THREE.MeshLambertMaterial({
+      color: new THREE.Color(this.colour),
+      transparent: false,
+      side: THREE.DoubleSide
+      // gradientMap: THREE.NearestFilter
     });
-    
-    
+
     //   let uniforms = {
     //   uTime: { value: 0.0 },
     //   uResolution: { value: { x: this.width, y:this.height } },
@@ -222,13 +321,12 @@ class Environment extends Component {
     //   vertexShader: Shader.vertex()
     // })
 
-
-  //   this.wireframeMaterial = new THREE.MeshBasicMaterial({
-  //     color: 0x79a6bc,
-  //     opacity: 1.0,
-  //     wireframe: true,
-  //     transparent: false,
-  //   });
+    //   this.wireframeMaterial = new THREE.MeshBasicMaterial({
+    //     color: 0x79a6bc,
+    //     opacity: 1.0,
+    //     wireframe: true,
+    //     transparent: false,
+    //   });
   };
 
   addTube() {
@@ -251,19 +349,74 @@ class Environment extends Component {
 
     this.setScale();
 
+      this.addFirstCube()
+      this.addSecondCube();
+      this.addThirdCube();
+  }
+
+  addFirstCube = () => {
     const geometry = new THREE.BoxGeometry(5, 5, 5);
-    const material = new THREE.MeshPhongMaterial( {
-        color: 0x156289,
-        emissive: 0x072534,
-        side: THREE.DoubleSide,
-        flatShading: true
-    } );
-    
-    this.cube = new THREE.Mesh( geometry, material );
+    const material = new THREE.MeshPhongMaterial({
+      color: 0x156289,
+      emissive: 0x072534,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+
+    this.cube = new THREE.Mesh(geometry, material);
     // let point = this.tubeGeometry.parameters.path.getPointAt(0.7);
-    // this.cube.position.set(point.x, point.y, point.z) 
-    this.cube.position.set(-83.29314565880259, 36.427311608619064, 118.50835837163037)
-    this.scene.add( this.cube );
+    // this.cube.position.set(point.x, point.y, point.z)
+    this.cube.position.set(
+      -80.8578995628169,
+      35.27833747091873,
+      120.70613396610423
+    );
+    this.cube.userData.modalType = ModalTypes.INTRODUCTION;
+    this.clickableObjects.push(this.cube);
+    this.scene.add(this.cube);
+  }
+
+  addSecondCube = () => {
+    const geometry = new THREE.BoxGeometry(5, 5, 5);
+    const material = new THREE.MeshPhongMaterial({
+      color: "red",
+      emissive: 0x072534,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+
+    let cube = new THREE.Mesh(geometry, material);
+    // let point = this.tubeGeometry.parameters.path.getPointAt(0.7);
+    // this.cube.position.set(point.x, point.y, point.z)
+    cube.position.set(
+      -9.969726519441327,
+      -4.203168989231084,
+      -126.90679745325926
+    );
+    cube.userData.modalType = ModalTypes.NEOLIBERAL_FILM;
+    this.clickableObjects.push(cube);
+    this.scene.add(cube);
+  }
+
+  addThirdCube = () => {
+    const geometry = new THREE.BoxGeometry(5, 5, 5);
+    const material = new THREE.MeshPhongMaterial({
+      color: "green",
+      emissive: 0x072534,
+      side: THREE.DoubleSide,
+      flatShading: true
+    });
+
+    let cube = new THREE.Mesh(geometry, material);
+    cube.position.set(
+      -256.80947141936144,
+      4.063884826255481,
+      55.82735307181664
+    );
+    cube.userData.modalType = ModalTypes.BURNING_MAN;
+
+    this.clickableObjects.push(cube);
+    this.scene.add(cube);
   }
 
   setScale() {
@@ -289,7 +442,7 @@ class Environment extends Component {
     this.cameraEye.visible = this.params.cameraHelper;
   }
 
-  updateCamera = (t) => {
+  updateCamera = t => {
     // const time = Date.now();
     // const looptime = 20 * 1000;
     // const t = (time % looptime) / looptime;
@@ -348,42 +501,85 @@ class Environment extends Component {
     this.cameraHelper.update();
   };
 
-  startAnimationLoop = () => {
-    if (this.cube) {
-      this.cube.rotation.x += 0.01;
-      this.cube.rotation.y += 0.01;
-    }
+  enterWorld = () => {
+    this.setState({
+      animationView: !this.state.animationView
+    })
+    this.params.animationView = !this.params.animationView;
+    // console.log(this.hValue + ", ");
+    // if (this.state.animationView) {
+      // this.wireframeMaterial.transparent = false;
+      this.updateCamera(1/500);
+      this.controls.dispose();
+    // } else {
+      // this.wireframeMaterial.transparent = true;
+      // this.setupControls();
+    // }
+  }
 
-    if(!this.params.animationView) {
-      // this.updateCamera();
-      this.controls.update()
-      this.renderer.render(
-      this.scene,
-      this.params.animationView ? this.splineCamera : this.camera
-    );
-    } else {
-      this.composer.render();
+  openModal = (modalType) => {
+    console.log('OPEN MODAL')
+    this.setState({
+      showModal: true,
+      modalType: modalType,
+      pause: true
+    })
+  }
+
+  closeModal = () => {
+    // this.controls.enabled = true;
+    this.setState({
+      pause: false,
+      showModal: false,
+    })
+
+  }
+
+  renderEnvironment = () => {
+    if(!this.state.pause) {
+      if (!this.state.animationView) {
+        // this.updateCamera();
+        this.controls.update();
+        this.renderer.render(
+          this.scene,
+          this.state.animationView ? this.splineCamera : this.camera
+        );
+      } else {
+        this.composer.render();
+      }
+      if (this.sound) {
+        this.sound.detune = this.audioDetune;
+      }
+
+      // The window.requestAnimationFrame() method tells the browser that you wish to perform
+      // an animation and requests that the browser call a specified function
+      // to update an animation before the next repaint
     }
+  }
+
+  updateColours = () => {
     let speed = 0.001;
-    if(this.hValue <= 0) {
+    if (this.hValue <= 0) {
       this.factor = 1;
-    } else if(this.hValue >= 1) {
+    } else if (this.hValue >= 1) {
       this.factor = -1;
     }
 
-    this.hValue+= speed * this.factor;
+    this.hValue += speed * this.factor;
 
-    this.colour.lerpColors(new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue), new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue), this.hValue)
+    this.colour.lerpColors(
+      new THREE.Color(Colours.green).setHSL(0.4, this.sValue, this.lValue),
+      new THREE.Color(Colours.green).setHSL(0.5, this.sValue, this.lValue),
+      this.hValue
+    );
     // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
-    this.material.color.set(this.colour)
+    this.material.color.set(this.colour);
+  }
+  startAnimationLoop = () => {
+    this.requestID = requestAnimationFrame(this.startAnimationLoop);
+    this.renderEnvironment()
+    this.updateColours()
 
-    
-
-
-    // The window.requestAnimationFrame() method tells the browser that you wish to perform
-    // an animation and requests that the browser call a specified function
-    // to update an animation before the next repaint
-    this.requestID = window.requestAnimationFrame(this.startAnimationLoop);
   };
 
   handleWindowResize = () => {
@@ -400,55 +596,123 @@ class Environment extends Component {
   };
 
   onDocumentDoubleClick = event => {
-    this.params.animationView = !this.params.animationView;
-    console.log(this.hValue + ', ')
-    if (this.params.animationView) {
-        // this.wireframeMaterial.transparent = false;
-        this.updateCamera(0)
-      this.controls.dispose();
-    } else {
-      // this.wireframeMaterial.transparent = true;
-      this.setupControls();
+    // this.enterWorld();
+    if(!this.state.pause) {
+      console.log('onMouseClick', this.splineCamera.position)
 
+      event.preventDefault();
+      this.setMouse(event);
+  
+      this.raycaster.setFromCamera(this.mouse, this.splineCamera);
+      this.intersects = this.raycaster.intersectObjects(
+        this.clickableObjects,
+        true
+      );
+  
+      if (this.intersects.length > 0) {
+        console.log(this.intersects[0])
+        let obj = this.intersects[0].object;
+        this.openModal(obj.userData.modalType)
+        obj.material.color.r = 0;
+        obj.material.color.g = 255;
+        obj.material.color.b = 0;
+      }
     }
+
+  };
+  
+
+  onMouseClick = event => {
+    console.log('onMouseClick', this.splineCamera.position)
+  };
+
+  onDocumentMouseMove = event => {
+    event.preventDefault();
+    this.setMouse(event);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    this.intersects = this.raycaster.intersectObjects(
+      this.clickableObjects,
+      true
+    );
+    if (this.intersects.length > 0) {
+      console.log('', this.mouse)
+      console.log(this.intersects[0])
+      let obj = this.intersects[0].object;
+      obj.material.color.r = 0;
+      obj.material.color.g = 255;
+      obj.material.color.b = 0;
+    }
+    let boundingBoxes = this.clickableObjects.map(object => {
+        return object.objectBoundary;
+    })
   };
 
   onMouseWheel = event => {
-    let numOfPoints = 350;
-    if(event.deltaY > 0) {
-      // if(this.camPosIndex < numOfPoints - 1) {
-        this.camPosIndex++;
-      // }
-    } else if(event.deltaY < 0) {
-      if(this.camPosIndex > 0) {
-        this.camPosIndex--;
-      }
+    if(!this.state.pause){
+      let numOfPoints = 500;
+      this.move(event);
+
+      let i = (this.camPosIndex % numOfPoints) / numOfPoints;
+      this.audioDetune = i * 12000;
+      this.hValue = i;
+      this.colour.lerpColors(
+        new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue),
+        new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue),
+        this.hValue
+      );
+  
+      // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
+      this.material.color.set(this.colour);
+  
+      this.updateCamera(i);
     }
-    let i = (this.camPosIndex % numOfPoints)/numOfPoints
-    this.hValue = i;
-    this.colour.lerpColors(new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue), new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue), this.hValue)
-
-    // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
-    this.material.color.set(this.colour)
-
-    this.updateCamera(i)
 
   };
 
+  move = (event) => {
+    if (event.deltaY > 0) {
+      this.moveUp()
+      // if(this.camPosIndex < numOfPoints - 1) {
+      // }
+    } else if (event.deltaY < 0) {
+      if (this.camPosIndex > 0) {
+        this.moveDown()
+      }
+    }
+  }
+
+  moveUp = () => {
+    this.camPosIndex++;
+  }
+
+  moveDown = () => {
+    this.camPosIndex--;
+  }
+
   addEventListeners = () => {
+    // document.addEventListener("mousemove", this.onDocumentMouseMove, false);
     document.addEventListener("dblclick", this.onDocumentDoubleClick, false);
     window.addEventListener("resize", this.handleWindowResize, false);
     window.addEventListener("wheel", this.onMouseWheel, false);
   };
 
   removeEventListeners = () => {
+    // document.removeEventListener("mousemove", this.onDocumentMouseMove);
     document.removeEventListener("dblclick", this.onDocumentDoubleClick);
     window.removeEventListener("resize", this.handleWindowResize);
     window.addEventListener("wheel", this.onMouseWheel);
   };
 
   render() {
-    return <div style={style} ref={ref => (this.mount = ref)} />;
+    return (
+    <EnvironmentWrapper ref={ref => (this.mount = ref)}> 
+      <MenuWrapper show={!this.state.animationView}>
+        <MenuFlexWrapper>
+          <MenuText onClick={() => this.enterWorld()}> Enter</MenuText>
+        </MenuFlexWrapper>
+      </MenuWrapper>
+      <Modal show={this.state.showModal} type={this.state.modalType} closeModal={this.closeModal.bind(this)}/>
+    </EnvironmentWrapper>);
   }
 }
 

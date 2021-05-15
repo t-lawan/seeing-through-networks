@@ -19,10 +19,13 @@ export const size = {
 export const Colours = {
   purple: "#a841f4",
   yellow: "#E4EE3F",
+  green: '#32CD32',
   grey: "#CCD6D7",
+  blue: 'rgb(0,0,255)',
   dark_grey: "	#707070",
-  green: "hsl(115, 100%, 42%)",
-  environment_background: "#BABAB8"
+  // green: "hsl(115, 100%, 42%)",
+  environment_background: "#BABAB8",
+  // blue: '#32cdcd'
 };
 
 export const GlobalStyle = createGlobalStyle`
@@ -40,7 +43,7 @@ export const GlobalStyle = createGlobalStyle`
     @media (max-width: ${size.tablet}) {
       width: 7px;
     }
-overflow-y: hidden;
+overflow: hidden;
 
   }
   ::-webkit-scrollbar-thumb {

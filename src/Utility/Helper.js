@@ -1,0 +1,5 @@
+export const ModalTypes = {
+    INTRODUCTION: 'INTRODUCTION',
+    NEOLIBERAL_FILM: 'NEOLIBERAL_FILM',
+    BURNING_MAN: 'BURNING_MAN'
+}
