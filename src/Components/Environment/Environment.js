@@ -6,17 +6,19 @@ import { Curves } from "../../Utility/Curves";
 import { AfterimagePass } from "../../Utility/AfterImagePass";
 import { EffectComposer } from "../../Utility/EffectComposer";
 import { RenderPass } from "../../Utility/RenderPass";
+import { ShaderPass } from "../../Utility/ShaderPass";
 import LAURIE_DRONE from "../../Assets/Audio/LAURIE_DRONE.mp3";
-import LAURIE_DRUMS from "../../Assets/Audio/LAURIE_DRUMS.mp3";
-import styled from 'styled-components'
+import styled from "styled-components";
 import { ModalTypes } from "../../Utility/Helper";
 import Modal from "../Modal/Modal";
-const style = {
-  height: "100vh" // we can control scene size by setting container dimensions
-};
+import { PixelShader } from "../../Utility/PixelShader";
+import Mountain from '../../Assets/Models/Mountain.glb'
+import {GLTFLoader} from '../../Utility/Loaders/GLTFLoader'
+import FirePng from '../../Assets/Fire.png'
+import Fire from "../../Utility/Fire";
 const EnvironmentWrapper = styled.div`
-  height: 100vh
-`
+  height: 100vh;
+`;
 const MenuWrapper = styled.div`
   width: 100vw;
   height: 15vh;
@@ -24,8 +26,34 @@ const MenuWrapper = styled.div`
   bottom: 0;
   /* background: red; */
   z-index: 1000;
-  display: ${props => props.show ? 'block': 'none'};
-`
+  display: ${props => (props.show ? "block" : "none")};
+`;
+
+const CurvedSVG = styled.svg``;
+
+const CurvedPath = styled.path`
+  fill: transparent;
+`;
+
+const CurvedText = styled.text`
+  fill: ${Colours.green};
+`;
+
+let CurvedSpan = styled.span`
+  color: ${Colours.green};
+  /* font-weight: bold; */
+  font-style: italic;
+  white-space: pre;
+  overflow: visible;
+  display: block;
+  position: absolute;
+  /* -moz-transform-origin: 50% 100%;
+  -webkit-transform-origin: 50% 100%;
+  -o-transform-origin: 50% 100%;
+  -ms-transform-origin: 50% 100%;
+  transform-origin: 50% 100%; */
+
+`;
 
 const MenuFlexWrapper = styled.div`
   width: 100%;
@@ -34,11 +62,15 @@ const MenuFlexWrapper = styled.div`
   justify-content: center;
   align-items: center;
   height: 100%;
-`
+`;
 
 const MenuText = styled.h1`
   color: ${Colours.green};
-`
+  /* font-weight: bold; */
+  font-style: italic;
+  cursor: pointer;
+  display: ${props => (props.show ? "block" : "none")};
+`;
 class Environment extends Component {
   width;
   height;
@@ -46,8 +78,10 @@ class Environment extends Component {
   tubeGeometry;
   mesh;
   cameraHelper;
-  composer;
+  splineCameraComposer;
+  mainCameraComposer;
   afterImagePass;
+  pixelPass;
   camPosIndex = 0;
   colour;
   factor = 1;
@@ -57,12 +91,17 @@ class Environment extends Component {
   sound;
   audioDetune = 0;
   clickableObjects = [];
+  enterText = "enter medium";
   state = {
-    animationView: true,
-    pause: true,
-    showModal: true,
-    modalType: ModalTypes.INTRODUCTION
-  }
+    animationView: false,
+    pause: false,
+    showModal: false,
+    modalType: ModalTypes.NEOLIBERAL_FILM,
+    isNearText: false,
+    itemsLoaded: 0,
+    itemsTotal: 0,
+    hasLoaded: false
+  };
 
   componentDidMount() {
     this.init();
@@ -98,8 +137,9 @@ class Environment extends Component {
     this.setupMouse();
     this.setupAudioListener();
     this.setupRenderer();
+    this.setupMainCameraPostProcessing();
     this.setupPostProcessing();
-    // this.setupAudio();
+    this.setupAudio();
     this.addEventListeners();
     // this.clock = new THREE.Clock();
   };
@@ -113,11 +153,31 @@ class Environment extends Component {
     );
     this.camera.position.set(0, 50, 500);
   };
-  setupPostProcessing = () => {
-    this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.scene, this.splineCamera));
+
+  setupMainCameraPostProcessing = () => {
+    this.mainCameraComposer = new EffectComposer(this.renderer);
+    this.mainCameraComposer.addPass(new RenderPass(this.scene, this.camera));
     this.afterImagePass = new AfterimagePass();
-    this.composer.addPass(this.afterImagePass);
+
+    this.pixelPass = new ShaderPass(PixelShader);
+    this.pixelPass.uniforms["resolution"].value = new THREE.Vector2(
+      window.innerWidth,
+      window.innerHeight
+    );
+    this.pixelPass.uniforms["resolution"].value.multiplyScalar(
+      window.devicePixelRatio
+    );
+    this.pixelPass.uniforms["pixelSize"].value = 5;
+    this.mainCameraComposer.addPass(this.pixelPass);
+    this.mainCameraComposer.addPass(this.afterImagePass);
+  };
+  setupPostProcessing = () => {
+    this.splineCameraComposer = new EffectComposer(this.renderer);
+    this.splineCameraComposer.addPass(
+      new RenderPass(this.scene, this.splineCamera)
+    );
+    this.afterImagePass = new AfterimagePass();
+    this.splineCameraComposer.addPass(this.afterImagePass);
   };
 
   setupSplineCamera = () => {
@@ -160,21 +220,34 @@ class Environment extends Component {
     this.manager.onStart = this.loadStart;
     this.manager.onProgress = this.loadProgressing;
     this.manager.onLoad = this.loadFinished;
+    this.manager.onError = this.loadError;
   };
-
   loadStart = (url, itemsLoaded, itemsTotal) => {
-    // this.props.isLoading();
-    // this.props.loading(itemsLoaded, itemsTotal);
+    this.setState({
+      itemsLoaded: itemsLoaded,
+      itemsTotal: itemsTotal
+    })
   };
 
   loadProgressing = (url, itemsLoaded, itemsTotal) => {
-    // this.props.loading(itemsLoaded, itemsTotal);
+    this.setState({
+      itemsLoaded: itemsLoaded,
+      itemsTotal: itemsTotal
+    })
   };
 
   loadFinished = () => {
-    // this.props.hasLoaded();
-    // this.onWindowResize();
+    this.setState({
+      hasLoaded: true
+    })
+    
+    this.handleWindowResize()
   };
+
+  loadError = (url) => {
+    console.log('ERROR', url)
+
+  }
 
   setupCameraHelper = () => {
     this.cameraEye = new THREE.Mesh(
@@ -349,15 +422,17 @@ class Environment extends Component {
 
     this.setScale();
 
-      this.addFirstCube()
-      this.addSecondCube();
-      this.addThirdCube();
+    // this.addBurningManCube();
+    // this.addNeoliberalCube();
+    this.addMountain()
+    this.addIntroCube();
+    this.addFire()
   }
 
-  addFirstCube = () => {
+  addBurningManCube = () => {
     const geometry = new THREE.BoxGeometry(5, 5, 5);
     const material = new THREE.MeshPhongMaterial({
-      color: 0x156289,
+      color: "blue",
       emissive: 0x072534,
       side: THREE.DoubleSide,
       flatShading: true
@@ -371,12 +446,66 @@ class Environment extends Component {
       35.27833747091873,
       120.70613396610423
     );
-    this.cube.userData.modalType = ModalTypes.INTRODUCTION;
+    this.cube.userData.modalType = ModalTypes.BURNING_MAN;
     this.clickableObjects.push(this.cube);
     this.scene.add(this.cube);
+  };
+
+  addFire = () =>{
+    let textureLoader = new THREE.TextureLoader();
+    let tex = textureLoader.load(FirePng);
+    this.fire = new Fire( tex );
+    this.fire.position.set(
+      -80.8578995628169,
+      35.27833747091873,
+      120.70613396610423
+    );
+    console.log('FIRE', this.fire)
+    // this.fire.scale = new THREE.Vector3(2,2,2)
+    this.fire.userData.modalType = ModalTypes.BURNING_MAN;
+    this.clickableObjects.push(this.fire);
+    this.scene.add(this.fire)
   }
 
-  addSecondCube = () => {
+  addMountain = () => {
+    const loader = new GLTFLoader(this.manager);
+    let mesh = new THREE.Object3D();
+
+    loader.load(Mountain, gltf => {
+      mesh = gltf.scene;
+      console.log('GLTF', gltf)
+      console.log('mesh', mesh)
+      mesh.position.set(
+        -9.969726519441327,
+        -4.203168989231084,
+        -126.90679745325926
+      );
+
+      const lights = [];
+      const light = new THREE.PointLight( 'white', 5, 10 );
+  
+      light.position.set(
+        -9.969726519441327,
+        -4.203168989231084,
+        -126.90679745325926
+      );
+      mesh.rotateX(90 * (Math.PI/180))
+      mesh.userData.modalType = ModalTypes.NEOLIBERAL_FILM;
+      mesh.children[2].children.forEach((child, index) => {
+        mesh.children[2].children[index].userData.modalType = ModalTypes.NEOLIBERAL_FILM
+      })
+  
+      // this.scene.add(light );
+
+      this.scene.add(mesh);
+      this.clickableObjects.push(mesh);
+
+  })
+  }
+
+   
+  addNeoliberalCube = () => {
+    
     const geometry = new THREE.BoxGeometry(5, 5, 5);
     const material = new THREE.MeshPhongMaterial({
       color: "red",
@@ -396,10 +525,10 @@ class Environment extends Component {
     cube.userData.modalType = ModalTypes.NEOLIBERAL_FILM;
     this.clickableObjects.push(cube);
     this.scene.add(cube);
-  }
+  };
 
-  addThirdCube = () => {
-    const geometry = new THREE.BoxGeometry(5, 5, 5);
+  addIntroCube = () => {
+    const geometry = new THREE.TorusKnotGeometry( 5, 0.3, 237, 15, 2,6 );
     const material = new THREE.MeshPhongMaterial({
       color: "green",
       emissive: 0x072534,
@@ -413,11 +542,11 @@ class Environment extends Component {
       4.063884826255481,
       55.82735307181664
     );
-    cube.userData.modalType = ModalTypes.BURNING_MAN;
+    cube.userData.modalType = ModalTypes.INTRODUCTION;
 
     this.clickableObjects.push(cube);
     this.scene.add(cube);
-  }
+  };
 
   setScale() {
     this.mesh.scale.set(
@@ -504,58 +633,64 @@ class Environment extends Component {
   enterWorld = () => {
     this.setState({
       animationView: !this.state.animationView
-    })
+    });
     this.params.animationView = !this.params.animationView;
     // console.log(this.hValue + ", ");
     // if (this.state.animationView) {
-      // this.wireframeMaterial.transparent = false;
-      this.updateCamera(1/500);
-      this.controls.dispose();
+    // this.wireframeMaterial.transparent = false;
+    this.updateCamera(1 / 500);
+    this.controls.dispose();
     // } else {
-      // this.wireframeMaterial.transparent = true;
-      // this.setupControls();
+    // this.wireframeMaterial.transparent = true;
+    // this.setupControls();
     // }
-  }
+  };
 
-  openModal = (modalType) => {
-    console.log('OPEN MODAL')
+  openModal = modalType => {
+    console.log("OPEN MODAL");
     this.setState({
       showModal: true,
       modalType: modalType,
       pause: true
-    })
-  }
+    });
+  };
 
   closeModal = () => {
     // this.controls.enabled = true;
     this.setState({
       pause: false,
-      showModal: false,
-    })
-
-  }
+      showModal: false
+    });
+  };
 
   renderEnvironment = () => {
-    if(!this.state.pause) {
+    if (!this.state.pause) {
       if (!this.state.animationView) {
         // this.updateCamera();
         this.controls.update();
-        this.renderer.render(
-          this.scene,
-          this.state.animationView ? this.splineCamera : this.camera
-        );
+        // this.renderer.render(
+        //   this.scene,
+        //   this.camera
+        // );
+        this.mainCameraComposer.render();
       } else {
-        this.composer.render();
+        this.splineCameraComposer.render();
       }
       if (this.sound) {
         this.sound.detune = this.audioDetune;
       }
 
+      if(this.fire){
+        this.fire.update(performance.now() / 1000);
+
+      }
+
+
       // The window.requestAnimationFrame() method tells the browser that you wish to perform
       // an animation and requests that the browser call a specified function
       // to update an animation before the next repaint
     }
-  }
+  };
 
   updateColours = () => {
     let speed = 0.001;
@@ -569,17 +704,16 @@ class Environment extends Component {
 
     this.colour.lerpColors(
       new THREE.Color(Colours.green).setHSL(0.4, this.sValue, this.lValue),
-      new THREE.Color(Colours.green).setHSL(0.5, this.sValue, this.lValue),
+      new THREE.Color(Colours.blue).setHSL(0.5, this.sValue, this.lValue),
       this.hValue
     );
     // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
     this.material.color.set(this.colour);
-  }
+  };
   startAnimationLoop = () => {
     this.requestID = requestAnimationFrame(this.startAnimationLoop);
-    this.renderEnvironment()
-    this.updateColours()
-
+    this.renderEnvironment();
+    this.updateColours();
   };
 
   handleWindowResize = () => {
@@ -597,97 +731,99 @@ class Environment extends Component {
 
   onDocumentDoubleClick = event => {
     // this.enterWorld();
-    if(!this.state.pause) {
-      console.log('onMouseClick', this.splineCamera.position)
+    if (!this.state.pause) {
+      console.log("onMouseClick", this.splineCamera.position);
 
       event.preventDefault();
       this.setMouse(event);
-  
+
       this.raycaster.setFromCamera(this.mouse, this.splineCamera);
       this.intersects = this.raycaster.intersectObjects(
         this.clickableObjects,
         true
       );
-  
+
       if (this.intersects.length > 0) {
-        console.log(this.intersects[0])
+        console.log(this.intersects[0]);
         let obj = this.intersects[0].object;
-        this.openModal(obj.userData.modalType)
-        obj.material.color.r = 0;
-        obj.material.color.g = 255;
-        obj.material.color.b = 0;
+        console.log('OBJ', obj)
+        this.openModal(obj.userData.modalType);
+
       }
     }
-
   };
-  
 
   onMouseClick = event => {
-    console.log('onMouseClick', this.splineCamera.position)
-  };
-
-  onDocumentMouseMove = event => {
-    event.preventDefault();
-    this.setMouse(event);
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    this.intersects = this.raycaster.intersectObjects(
-      this.clickableObjects,
-      true
-    );
-    if (this.intersects.length > 0) {
-      console.log('', this.mouse)
-      console.log(this.intersects[0])
-      let obj = this.intersects[0].object;
-      obj.material.color.r = 0;
-      obj.material.color.g = 255;
-      obj.material.color.b = 0;
-    }
-    let boundingBoxes = this.clickableObjects.map(object => {
-        return object.objectBoundary;
-    })
+    console.log("onMouseClick", this.splineCamera.position);
   };
 
   onMouseWheel = event => {
-    if(!this.state.pause){
+    if (!this.state.pause) {
       let numOfPoints = 500;
       this.move(event);
-
+      // console.log('CLIC', this.clickableObjects)
       let i = (this.camPosIndex % numOfPoints) / numOfPoints;
       this.audioDetune = i * 12000;
       this.hValue = i;
-      this.colour.lerpColors(
-        new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue),
-        new THREE.Color("white").setHSL(0.15, this.sValue, this.lValue),
-        this.hValue
-      );
-  
+      // this.colour.lerpColors(
+      //   new THREE.Color("white").setHSL(0.1, this.sValue, this.lValue),
+      //   new THREE.Color("white").setHSL(0.25, this.sValue, this.lValue),
+      //   this.hValue
+      // );
+
       // this.colour.setHSL(this.hValue,this.sValue, this.lValue);
       this.material.color.set(this.colour);
-  
+      this.checkDistanceToClickableObjects()
+
       this.updateCamera(i);
     }
-
   };
 
-  move = (event) => {
+  checkDistanceToClickableObjects = () => {
+    let threshold = 35;
+    let isCloseToObject = false;
+
+    this.clickableObjects.forEach((obj) => {
+      let distance = this.splineCamera.position.distanceTo(obj.position);
+      if(threshold >= distance) {
+        isCloseToObject = true
+      }
+    })
+
+    if(!this.state.isNearText && isCloseToObject) {
+      this.setState({
+        isNearText: true
+      })
+    } else if(this.state.isNearText && !isCloseToObject) {
+      this.setState({
+        isNearText: false
+      })
+    }
+
+  
+
+    // this.splineCamera.position
+  }
+
+  move = event => {
     if (event.deltaY > 0) {
-      this.moveUp()
+      this.moveUp();
       // if(this.camPosIndex < numOfPoints - 1) {
       // }
     } else if (event.deltaY < 0) {
       if (this.camPosIndex > 0) {
-        this.moveDown()
+        this.moveDown();
       }
     }
-  }
+  };
 
   moveUp = () => {
     this.camPosIndex++;
-  }
+  };
 
   moveDown = () => {
     this.camPosIndex--;
-  }
+  };
 
   addEventListeners = () => {
     // document.addEventListener("mousemove", this.onDocumentMouseMove, false);
@@ -705,14 +841,27 @@ class Environment extends Component {
 
   render() {
     return (
-    <EnvironmentWrapper ref={ref => (this.mount = ref)}> 
-      <MenuWrapper show={!this.state.animationView}>
-        <MenuFlexWrapper>
-          <MenuText onClick={() => this.enterWorld()}> Enter</MenuText>
-        </MenuFlexWrapper>
-      </MenuWrapper>
-      <Modal show={this.state.showModal} type={this.state.modalType} closeModal={this.closeModal.bind(this)}/>
-    </EnvironmentWrapper>);
+      <EnvironmentWrapper ref={ref => (this.mount = ref)}>
+        <MenuWrapper show={!this.state.showModal}>
+          <MenuFlexWrapper>
+            <MenuText  show={!this.state.animationView} onClick={() => this.enterWorld()}> 
+            {this.enterText}
+              {/* {this.enterText.split("").map((letter, index) => (
+                <CurvedSpan key={index}> {this.enterText[index]}</CurvedSpan>
+              ))} */}
+            </MenuText>
+            <MenuText show={this.state.isNearText}>
+              double click on object
+            </MenuText>
+          </MenuFlexWrapper>
+        </MenuWrapper>
+        <Modal
+          show={this.state.showModal}
+          type={this.state.modalType}
+          closeModal={this.closeModal.bind(this)}
+        />
+      </EnvironmentWrapper>
+    );
   }
 }
 

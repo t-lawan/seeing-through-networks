@@ -2,6 +2,9 @@ import * as React from "react";
 import styled from "styled-components";
 import { ModalTypes } from "../../Utility/Helper";
 import IntroductionModal from "./IntroductionModal";
+import { Colours } from "../Global/global.styles";
+import VideoModal from "./VideoModal";
+import UbuntuModal from "./UbuntuModal";
 
 
 const ModalWrapper = styled.div`
@@ -23,28 +26,38 @@ const FlexWrapper = styled.div`
     height: 100%;
     width: 100%;
 `
+const MediumNavigationWrapper = styled.div``
+
+const MediumNavigation = styled.h1`
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding-right: 2vw;
+    color:rgb(0,255,0);
+`
 
 
 const Modal = (props) => {
     const displayItem = () => {
         let type = props.type;
         let comp;
+        console.log('TYPE', type)
         switch(type){
             case ModalTypes.INTRODUCTION: {
                 comp = (
                     <IntroductionModal />
-                )
+                );
                 break;
             };
             case ModalTypes.NEOLIBERAL_FILM: {
                 comp =  (
-                    <IntroductionModal />
-                )
+                    <VideoModal />
+                );
                 break;
             }
             case ModalTypes.BURNING_MAN: {
                 comp =  (
-                    <IntroductionModal />
+                    <UbuntuModal />
                 )
                 break;
             }
@@ -62,7 +75,7 @@ const Modal = (props) => {
             <FlexWrapper>
             {props.show ? displayItem() : null}
             {/* {displayItem()} */}
-
+            {props.show ? <MediumNavigation onClick={() => props.closeModal()}> medium </MediumNavigation> : null}
             </FlexWrapper>
       </ModalWrapper>
     );
