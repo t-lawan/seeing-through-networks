@@ -51,14 +51,20 @@ const Modal = (props) => {
             };
             case ModalTypes.NEOLIBERAL_FILM: {
                 comp =  (
-                    <VideoModal />
+                    <VideoModal video={ModalTypes.NEOLIBERAL_FILM} />
                 );
                 break;
             }
             case ModalTypes.BURNING_MAN: {
                 comp =  (
-                    <UbuntuModal />
+                    <VideoModal video={ModalTypes.BURNING_MAN} />
                 )
+                break;
+            }
+            case ModalTypes.UBUNTU: {
+                comp = (
+                    <UbuntuModal />
+                );
                 break;
             }
             default: 

@@ -34,7 +34,7 @@ const VideoModal = (props) => {
 
     return (
       <VideoModalWrapper>
-        <VideoSketch />
+        <VideoSketch video={props.video} />
 
       </VideoModalWrapper>
     );

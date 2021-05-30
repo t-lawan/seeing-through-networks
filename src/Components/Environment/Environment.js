@@ -426,7 +426,8 @@ class Environment extends Component {
     // this.addNeoliberalCube();
     this.addMountain()
     this.addIntroCube();
-    this.addFire()
+    this.addFire();
+    this.addUbuntu();
   }
 
   addBurningManCube = () => {
@@ -455,11 +456,17 @@ class Environment extends Component {
     let textureLoader = new THREE.TextureLoader();
     let tex = textureLoader.load(FirePng);
     this.fire = new Fire( tex );
+    // this.fire.position.set(
+    //   -80.8578995628169,
+    //   35.27833747091873,
+    //   120.70613396610423
+    // );
     this.fire.position.set(
-      -80.8578995628169,
-      35.27833747091873,
-      120.70613396610423
+      151.592351669366,
+      -127.35163993518582,
+      123.40616803522614
     );
+
     console.log('FIRE', this.fire)
     // this.fire.scale = new THREE.Vector3(2,2,2)
     this.fire.userData.modalType = ModalTypes.BURNING_MAN;
@@ -504,7 +511,7 @@ class Environment extends Component {
   }
 
    
-  addNeoliberalCube = () => {
+  addUbuntu = () => {
     
     const geometry = new THREE.BoxGeometry(5, 5, 5);
     const material = new THREE.MeshPhongMaterial({
@@ -518,11 +525,11 @@ class Environment extends Component {
     // let point = this.tubeGeometry.parameters.path.getPointAt(0.7);
     // this.cube.position.set(point.x, point.y, point.z)
     cube.position.set(
-      -9.969726519441327,
-      -4.203168989231084,
-      -126.90679745325926
+      -80.8578995628169,
+      35.27833747091873,
+      120.70613396610423
     );
-    cube.userData.modalType = ModalTypes.NEOLIBERAL_FILM;
+    cube.userData.modalType = ModalTypes.UBUNTU;
     this.clickableObjects.push(cube);
     this.scene.add(cube);
   };
@@ -752,6 +759,10 @@ class Environment extends Component {
       }
     }
   };
+
+//   x: 151.592351669366
+// y: -127.35163993518582
+// z: 123.40616803522614
 
   onMouseClick = event => {
     console.log("onMouseClick", this.splineCamera.position);

@@ -3,8 +3,7 @@ import Sketch from "react-p5";
 import styled from "styled-components";
 import FontFile from "../../Assets/Fonts/NHaasGroteskDSPro-55Rg.ttf";
 import { LinkText } from "../../Models/TextLinkModel";
-import MenStaring from '../../Assets/Videos/MEN_STARING.mp4'
-import MontPelerin from '../../Assets/Videos/MONT_PELERIN.mp4'
+import { ModalTypes } from "../../Utility/Helper";
 
 const SketchState = {
   HOME_PAGE: "HOME_PAGE",
@@ -13,7 +12,8 @@ const SketchState = {
 };
 
 export const VideoFiles = {
-  MONT_PELERIN: MontPelerin
+  MONT_PELERIN: "https://dm0cfdicfoqce.cloudfront.net/MONT_PELERIN.mp4",
+  BURNING_MAN: "http://dm0cfdicfoqce.cloudfront.net/BURNING_MAN.mp4"
 }
 
 
@@ -41,13 +41,28 @@ const VideoSketch = props => {
 
 
   let selectedWord = LinkText.MONT_PELERIN;
+  let videoFile = VideoFiles.MONT_PELERIN;
+  if(props.video){
+    switch(props.video){
+      case ModalTypes.BURNING_MAN: {
+        selectedWord = LinkText.FREEDOM;
+        videoFile = VideoFiles.BURNING_MAN
+        break;
+      }
+      case ModalTypes.NEOLIBERAL_FILM: {
+        selectedWord = LinkText.MONT_PELERIN;
+        videoFile = VideoFiles.MONT_PELERIN
 
+        break;
+      }
+    }
+  }
   let state = SketchState.SCROLLING;
 
   const preload = p5 => {
     scrollingFont = p5.loadFont(FontFile);
     navigationFont = p5.loadFont(FontFile);
-    video = p5.createVideo([VideoFiles.MONT_PELERIN])
+    video = p5.createVideo([videoFile])
     video.hide();
   };
 
