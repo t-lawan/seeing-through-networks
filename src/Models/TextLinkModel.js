@@ -18,6 +18,7 @@ const SPACE = " ".repeat(20);
 let NETWORK = [
     "A Network is not just an arrangement of intersecting horizontal and vertical lines or a group or a system of interconnected things. It is a framework for organising and conceptualising non-linear complexity.",
     SPACE,
+    SPACE,
     "A network comprises of three basic units:",
     SPACE,
     "Links",
@@ -35,6 +36,47 @@ let NETWORK = [
     "This feeds into the subjective experience of future nodes", 
     SPACE,
     "Hence, embodied nodes hold a sequence of abstract images of the mesh or mirror the mesh"
+]
+
+let BURNING_MAN = [
+    "This is a film about the emergence of principles through the desires and behaviours in the earlier Burning Man gatherings",
+    SPACE,
+    SPACE,
+    "The Burning Man festival began as a bonfire ritual in 1986 by a loosely affiliated group of disenfranchised artists. There were no defined founding principles. Only young bohemians and free spirits expressing what they felt to be their true selves and building community.",
+    "Principles soon emerged.",
+    "Radical Inclusion",
+    SPACE,
+    "Gifting",
+    SPACE,
+    "Decommodification",
+    SPACE,
+    "Radical self-reliance",
+    SPACE,
+    "Radical Self-expression",
+    SPACE,
+    "Communal Effort",
+    SPACE,
+    "Civic Responsibility",
+    SPACE,
+    "Participation",
+    SPACE,
+    "Immediacy",
+    SPACE,
+    "These principles emerged through shared experiences of events in the earlier gatherings. ",
+    SPACE,
+    "A result of complex social interactions",
+    SPACE,
+    "A framework or a set of protocols in which the nodes can communicate. However, these principles seemed to contradict each other such as; Radical self-reliance and Communal efforts.",
+    SPACE,
+    "Hence, the principles are not commandments or requests, each actor is free to exert their positive freedoms but the principles are internalised and the actors desires are produced through interactions in the network.",
+    SPACE,
+    "Within the network, the  principles act as  institutions entangled with all actors producing and consuming information.",
+    SPACE,
+    "Materialising in the tip-sheets handed out when entering the playa",
+    SPACE,
+    "An egregore embodying the principles hover the playa™ entangling the self-reliant individuals on their quest for self discovery"    "
+
+
 ]
 
 let MONT_PELERIN = [
