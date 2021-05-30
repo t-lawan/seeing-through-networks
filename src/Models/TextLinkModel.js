@@ -74,7 +74,7 @@ let BURNING_MAN = [
     SPACE,
     "Materialising in the tip-sheets handed out when entering the playa",
     SPACE,
-    "An egregore embodying the principles hover the playa™ entangling the self-reliant individuals on their quest for self discovery"    "
+    "An egregore embodying the principles hover the playa™ entangling the self-reliant individuals on their quest for self discovery"
 
 
 ]
@@ -105,5 +105,6 @@ export const LinkText = {
     POWER: '“Power is diffusive rather than concentrated,embodied and enacted rather than possessed “. Power here is a function of intersection of links and the communication flowing through the links. Therefore, it is not an entity wielded by individual nodes.',
     FREEDOM: 'Negative Freedom is the absence of obstacles, barriers and constraints from outside entities. In liberal tradition, it is attributed to individual agents. It can also be defined as ‘freedom from’. Therefore, one can’t ‘experience’ this form of freedom but it allows one to act (in this model, communicate or feel information) without obstruction to others.',
     COMMUNICATION: 'A communication system consists of essentially five parts: Information Source, Transmitter, Channel, Receiver, Destination',
-    MONT_PELERIN: MONT_PELERIN
+    MONT_PELERIN: MONT_PELERIN,
+    BURNING_MAN: BURNING_MAN
 }

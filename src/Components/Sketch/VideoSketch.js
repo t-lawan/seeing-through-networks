@@ -45,7 +45,7 @@ const VideoSketch = props => {
   if(props.video){
     switch(props.video){
       case ModalTypes.BURNING_MAN: {
-        selectedWord = LinkText.FREEDOM;
+        selectedWord = LinkText.BURNING_MAN;
         videoFile = VideoFiles.BURNING_MAN
         break;
       }
