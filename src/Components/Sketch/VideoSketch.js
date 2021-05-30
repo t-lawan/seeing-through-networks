@@ -12,8 +12,12 @@ const SketchState = {
 };
 
 export const VideoFiles = {
-  MONT_PELERIN: "https://dm0cfdicfoqce.cloudfront.net/MONT_PELERIN.mp4",
-  BURNING_MAN: "http://dm0cfdicfoqce.cloudfront.net/BURNING_MAN.mp4"
+  // MONT_PELERIN: "https://dm0cfdicfoqce.cloudfront.net/MONT_PELERIN.mp4",
+  MONT_PELERIN: "https://marie-leuder.s3.eu-west-2.amazonaws.com/MONT_PELERIN.mp4",
+  // BURNING_MAN: "https://dm0cfdicfoqce.cloudfront.net/BURNING_MAN.mp4"
+  BURNING_MAN: "https://marie-leuder.s3.eu-west-2.amazonaws.com/BURNING_MAN.mp4"
+
+  
 }
 
 
@@ -25,7 +29,7 @@ const SketchWrapper = styled.div`
 const VideoSketch = props => {
   const wrapperRef = useRef(null);
   const [isPressed, setIsPressed] = useState(false);
-
+  let cValue = 0;
   let scrollingFont;
   let navigationFont;
 
@@ -79,20 +83,40 @@ const VideoSketch = props => {
   const setupScrollingText = p5 => {
     state = SketchState.SCROLLING;
     // scrollXPos = 0;
-    p5.fill(0, 0, 255);
+    if(props.video == ModalTypes.BURNING_MAN){
+      // p5.colorMode(p5.HSB, 100);
+      p5.fill(0, 255, 0);
+      // p5.fill(cValue)
+    } else {
+      p5.fill(0, 0, 255);
+    }
+    
     p5.textFont(scrollingFont);
     p5.textSize(scrollingFontSize);
     p5.textAlign(p5.LEFT, p5.BASELINE);
   };
 
   const drawScrollingText = p5 => {
+    // if(props.video == ModalTypes.BURNING_MAN){
+    //   let color = p5.lerpColor(p5.color(0, 255,0), p5.color(0,0,255), cValue);
+    //   p5.fill(color);
+    //   // p5.fill(p5.color(cValue%100, 40, 90))
+    // }
     p5.text(selectedWord, scrollXPos, height / 2);
     scrollXPos -= scrollSpeed;
+
+    if(cValue >= 1) {
+      cValue = 0
+    } else {
+      cValue += 0.001;
+
+    }
+
   };
 
 
   const draw = p5 => {
-    p5.background(0, 255, 0);
+    p5.background(0, 0, 255);
 
     if (state == SketchState.SCROLLING) {
       p5.image(video, 0, 0, width, height);

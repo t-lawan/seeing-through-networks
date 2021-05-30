@@ -96,7 +96,7 @@ class Environment extends Component {
     animationView: false,
     pause: false,
     showModal: false,
-    modalType: ModalTypes.NEOLIBERAL_FILM,
+    modalType: ModalTypes.BURNING_MAN,
     isNearText: false,
     itemsLoaded: 0,
     itemsTotal: 0,
@@ -427,7 +427,7 @@ class Environment extends Component {
     this.addMountain()
     this.addIntroCube();
     this.addFire();
-    this.addUbuntu();
+    this.addUbuntu(); 
   }
 
   addBurningManCube = () => {
@@ -655,6 +655,7 @@ class Environment extends Component {
 
   openModal = modalType => {
     console.log("OPEN MODAL");
+    this.sound.pause();
     this.setState({
       showModal: true,
       modalType: modalType,
@@ -664,6 +665,7 @@ class Environment extends Component {
 
   closeModal = () => {
     // this.controls.enabled = true;
+    this.sound.play()
     this.setState({
       pause: false,
       showModal: false
@@ -684,7 +686,7 @@ class Environment extends Component {
         this.splineCameraComposer.render();
       }
       if (this.sound) {
-        this.sound.detune = this.audioDetune;
+        // this.sound.detune = this.audioDetune;
       }
 
       if(this.fire){
