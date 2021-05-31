@@ -96,7 +96,8 @@ class Environment extends Component {
     animationView: false,
     pause: false,
     showModal: false,
-    modalType: ModalTypes.BURNING_MAN,
+    hasMoved: false,
+    modalType: ModalTypes.INTRODUCTION,
     isNearText: false,
     itemsLoaded: 0,
     itemsTotal: 0,
@@ -467,7 +468,6 @@ class Environment extends Component {
       123.40616803522614
     );
 
-    console.log('FIRE', this.fire)
     // this.fire.scale = new THREE.Vector3(2,2,2)
     this.fire.userData.modalType = ModalTypes.BURNING_MAN;
     this.clickableObjects.push(this.fire);
@@ -480,8 +480,6 @@ class Environment extends Component {
 
     loader.load(Mountain, gltf => {
       mesh = gltf.scene;
-      console.log('GLTF', gltf)
-      console.log('mesh', mesh)
       mesh.position.set(
         -9.969726519441327,
         -4.203168989231084,
@@ -654,7 +652,6 @@ class Environment extends Component {
   };
 
   openModal = modalType => {
-    console.log("OPEN MODAL");
     this.sound.pause();
     this.setState({
       showModal: true,
@@ -819,6 +816,11 @@ class Environment extends Component {
   }
 
   move = event => {
+    if(!this.state.hasMoved){
+      setTimeout(() => {
+        this.hasScrolled();
+      }, 4000)
+    }
     if (event.deltaY > 0) {
       this.moveUp();
       // if(this.camPosIndex < numOfPoints - 1) {
@@ -837,6 +839,12 @@ class Environment extends Component {
   moveDown = () => {
     this.camPosIndex--;
   };
+
+  hasScrolled = () => {
+    this.setState({
+      hasMoved: true
+    })
+  }
 
   addEventListeners = () => {
     // document.addEventListener("mousemove", this.onDocumentMouseMove, false);
@@ -865,6 +873,10 @@ class Environment extends Component {
             </MenuText>
             <MenuText show={this.state.isNearText}>
               double click on object
+            </MenuText>
+
+            <MenuText show={!this.state.hasMoved && this.state.animationView}>
+              scroll to move
             </MenuText>
           </MenuFlexWrapper>
         </MenuWrapper>

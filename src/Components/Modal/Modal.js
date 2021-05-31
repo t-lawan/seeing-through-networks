@@ -41,7 +41,6 @@ const Modal = (props) => {
     const displayItem = () => {
         let type = props.type;
         let comp;
-        console.log('TYPE', type)
         switch(type){
             case ModalTypes.INTRODUCTION: {
                 comp = (
